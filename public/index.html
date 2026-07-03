@@ -12,6 +12,111 @@
 </head>
 <body>
 
+  <!-- ================= AUTH OVERLAY (Login / Register) ================= -->
+  <div class="auth-overlay" id="authOverlay">
+    <div class="auth-card">
+      <!-- Left Panel: Mascot & Branding -->
+      <div class="auth-left">
+        <div class="auth-brand">
+          <img src="/logo.jpg" alt="ShareHood Logo" class="auth-logo">
+          <h1>ShareHood</h1>
+          <p>Connect, lend & volunteer<br>in your neighborhood</p>
+        </div>
+        <img src="/mascot_waving.jpg" alt="ShareHood Polar Bear Mascot" class="auth-mascot">
+        <p class="auth-tagline">"Building trust, one neighbor at a time."</p>
+      </div>
+
+      <!-- Right Panel: Forms -->
+      <div class="auth-right">
+        <!-- Tab switcher -->
+        <div class="auth-tabs">
+          <button class="auth-tab-btn active" id="showLoginBtn" data-form="login">Sign In</button>
+          <button class="auth-tab-btn" id="showRegisterBtn" data-form="register">Create Account</button>
+        </div>
+
+        <!-- LOGIN FORM -->
+        <form class="auth-form" id="loginForm">
+          <div class="auth-form-header">
+            <h2>Welcome back! 👋</h2>
+            <p>Sign in to your ShareHood account</p>
+          </div>
+
+          <div class="auth-field">
+            <label for="loginEmail">Email Address</label>
+            <div class="auth-input-wrapper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              <input type="email" id="loginEmail" placeholder="you@email.com" required autocomplete="email">
+            </div>
+          </div>
+
+          <div class="auth-field">
+            <label for="loginPassword">Password</label>
+            <div class="auth-input-wrapper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <input type="password" id="loginPassword" placeholder="Your password" required autocomplete="current-password">
+            </div>
+          </div>
+
+          <div class="auth-error hidden" id="loginError"></div>
+
+          <button type="submit" class="auth-submit-btn" id="loginSubmitBtn">
+            <span>Sign In</span>
+          </button>
+
+          <p class="auth-switch-text">Don't have an account? <button type="button" class="auth-link" id="toRegisterLink">Create one free</button></p>
+        </form>
+
+        <!-- REGISTER FORM -->
+        <form class="auth-form hidden" id="registerForm">
+          <div class="auth-form-header">
+            <h2>Join ShareHood! 🏡</h2>
+            <p>Create your neighborhood account</p>
+          </div>
+
+          <div class="auth-field">
+            <label for="regName">Full Name</label>
+            <div class="auth-input-wrapper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <input type="text" id="regName" placeholder="Your full name" required autocomplete="name">
+            </div>
+          </div>
+
+          <div class="auth-field">
+            <label for="regEmail">Email Address</label>
+            <div class="auth-input-wrapper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              <input type="email" id="regEmail" placeholder="you@email.com" required autocomplete="email">
+            </div>
+          </div>
+
+          <div class="auth-field">
+            <label for="regNeighborhood">Neighborhood</label>
+            <div class="auth-input-wrapper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"/><circle cx="12" cy="10" r="3"/></svg>
+              <input type="text" id="regNeighborhood" placeholder="e.g. Greenwood, Maplewood" required autocomplete="off">
+            </div>
+          </div>
+
+          <div class="auth-field">
+            <label for="regPassword">Password <span class="label-hint">(min. 6 characters)</span></label>
+            <div class="auth-input-wrapper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <input type="password" id="regPassword" placeholder="Choose a password" required autocomplete="new-password">
+            </div>
+          </div>
+
+          <div class="auth-error hidden" id="registerError"></div>
+
+          <button type="submit" class="auth-submit-btn" id="registerSubmitBtn">
+            <span>Create Account</span>
+          </button>
+
+          <p class="auth-switch-text">Already have an account? <button type="button" class="auth-link" id="toLoginLink">Sign in</button></p>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- App Container -->
   <div class="app-container">
     
@@ -28,12 +133,13 @@
       </div>
 
       <div class="nav-right">
-        <!-- Mock User Switcher -->
-        <div class="user-switcher-container">
-          <span class="switcher-label">Act as:</span>
-          <select id="userSelector" class="user-select">
-            <!-- Populated via JS -->
-          </select>
+        <!-- Logged-in User Profile Pill -->
+        <div class="user-profile-pill" id="userProfilePill">
+          <div class="avatar-circle" id="navAvatar">?</div>
+          <div class="profile-pill-text">
+            <span class="profile-name" id="navUserName">Loading...</span>
+            <span class="profile-neighborhood" id="navNeighborhood"></span>
+          </div>
         </div>
 
         <!-- Trust Wallet Info -->
@@ -86,6 +192,16 @@
           <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
           </svg>
+        </button>
+
+        <!-- Logout Button -->
+        <button class="logout-btn" id="logoutBtn" title="Sign out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          <span>Logout</span>
         </button>
       </div>
     </header>
@@ -522,6 +638,7 @@
 
   <!-- Load Web Socket Client Library & App Javascript -->
   <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/auth.js"></script>
   <script src="/js/socket.js"></script>
   <script src="/js/app.js"></script>
 </body>

@@ -11,9 +11,9 @@ window.sharehoodApp = {
   unreadChatCount: 0,
   typingTimeout: null,
 
-  init: async function() {
+  init: async function(user) {
     this.bindEvents();
-    await this.loadUsers();
+    this.setCurrentUser(user);
     await this.loadListings();
     
     // Set active tab to Explore initially
@@ -27,11 +27,6 @@ window.sharehoodApp = {
         const tabName = e.currentTarget.getAttribute('data-tab');
         this.switchTab(tabName);
       });
-    });
-
-    // User selector change
-    document.getElementById('userSelector').addEventListener('change', (e) => {
-      this.switchCurrentUser(e.target.value);
     });
 
     // Listing filters
@@ -126,41 +121,14 @@ window.sharehoodApp = {
     });
   },
 
-  // ================= MOCK USERS & IDENTITY WORK =================
-  loadUsers: async function() {
-    try {
-      const response = await fetch('/api/users');
-      this.users = await response.json();
-      
-      const userSelect = document.getElementById('userSelector');
-      userSelect.innerHTML = '';
-      
-      this.users.forEach(user => {
-        const opt = document.createElement('option');
-        opt.value = user.id;
-        opt.textContent = `${user.name} (${user.neighborhood})`;
-        userSelect.appendChild(opt);
-      });
-
-      // Retrieve previous session or fallback to first user
-      const savedUser = localStorage.getItem('sharehood_user_id');
-      const startUser = this.users.find(u => u.id === savedUser) || this.users[0];
-      
-      userSelect.value = startUser.id;
-      this.setCurrentUser(startUser);
-    } catch (err) {
-      console.error('Failed to load users:', err);
-    }
-  },
-
+  // ================= USER IDENTITY =================
   setCurrentUser: function(user) {
     this.currentUser = user;
-    localStorage.setItem('sharehood_user_id', user.id);
     
-    // Update labels and balance
-    document.getElementById('currentNeighborLabel').textContent = user.neighborhood;
+    // Update wallet display
     document.getElementById('walletBalance').textContent = `${user.wallet} TF`;
-    document.getElementById('walletLocked').textContent = `(${user.lockedFunds} Locked)`;
+    document.getElementById('walletLocked').textContent = `(${user.lockedFunds || 0} Locked)`;
+    document.getElementById('currentNeighborLabel').textContent = user.neighborhood;
 
     // Register with socket
     if (window.sharehoodSocket) {
@@ -176,25 +144,11 @@ window.sharehoodApp = {
     this.renderListingsGrid();
   },
 
-  switchCurrentUser: function(userId) {
-    const user = this.users.find(u => u.id === userId);
-    if (user) {
-      this.setCurrentUser(user);
-      this.showNotificationToast({
-        title: 'Switched User Profile',
-        message: `Now acting as ${user.name} from ${user.neighborhood}`,
-        type: 'transaction'
-      });
-      // Close chats and modals on user switch
-      this.closePublicChatModal();
-      this.closePrivateChatPane();
-    }
-  },
-
   // ================= GENERAL API DATA LOADING =================
   loadListings: async function() {
     try {
-      const response = await fetch('/api/listings');
+      const response = await sharehoodAuth.fetchWithAuth('/api/listings');
+      if (!response) return;
       this.listings = await response.json();
       this.renderListingsGrid();
     } catch (err) {
@@ -205,7 +159,8 @@ window.sharehoodApp = {
   loadNotifications: async function() {
     if (!this.currentUser) return;
     try {
-      const response = await fetch(`/api/notifications/${this.currentUser.id}`);
+      const response = await sharehoodAuth.fetchWithAuth(`/api/notifications/${this.currentUser.id}`);
+      if (!response) return;
       this.notifications = await response.json();
       this.renderNotificationsDropdown();
     } catch (err) {
@@ -353,11 +308,12 @@ window.sharehoodApp = {
     submitBtn.disabled = true;
 
     try {
-      const response = await fetch('/api/listings', {
+      const response = await sharehoodAuth.fetchWithAuth('/api/listings', {
         method: 'POST',
         body: formData
       });
 
+      if (!response) return;
       if (!response.ok) {
         const errData = await response.json();
         throw new Error(errData.error || 'Server error occurred');
@@ -414,17 +370,13 @@ window.sharehoodApp = {
     }
 
     try {
-      const response = await fetch(`/api/listings/${listingId}/take`, {
+      const response = await sharehoodAuth.fetchWithAuth(`/api/listings/${listingId}/take`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ takerId: this.currentUser.id })
       });
 
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.error || 'Failed to accept transaction');
-      }
-
+      if (!response) return;
       const result = await response.json();
       
       this.showNotificationToast({
@@ -452,15 +404,13 @@ window.sharehoodApp = {
     }
 
     try {
-      const response = await fetch(`/api/listings/${listingId}/complete`, {
+      const response = await sharehoodAuth.fetchWithAuth(`/api/listings/${listingId}/complete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: this.currentUser.id })
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to complete transaction');
-      }
+      if (!response) return;
 
       this.showNotificationToast({
         title: 'Lending Complete!',
@@ -483,13 +433,11 @@ window.sharehoodApp = {
     }
 
     try {
-      const response = await fetch(`/api/listings/${listingId}/cancel-take`, {
+      const response = await sharehoodAuth.fetchWithAuth(`/api/listings/${listingId}/cancel-take`, {
         method: 'POST'
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to cancel transaction');
-      }
+      if (!response) return;
 
       this.showNotificationToast({
         title: 'Agreement Cancelled',
@@ -654,7 +602,8 @@ window.sharehoodApp = {
 
     // Load message history
     try {
-      const response = await fetch(`/api/chats/listing_${listingId}_public`);
+      const response = await sharehoodAuth.fetchWithAuth(`/api/chats/listing_${listingId}_public`);
+      if (!response) return;
       const messages = await response.json();
       const chatContainer = document.getElementById('publicChatMessages');
       chatContainer.innerHTML = '';
@@ -766,7 +715,8 @@ window.sharehoodApp = {
 
     // Load message logs
     try {
-      const response = await fetch(`/api/chats/${this.activeRoomId}`);
+      const response = await sharehoodAuth.fetchWithAuth(`/api/chats/${this.activeRoomId}`);
+      if (!response) return;
       const messages = await response.json();
       const chatContainer = document.getElementById('privateChatMessages');
       chatContainer.innerHTML = '';
@@ -960,7 +910,7 @@ window.sharehoodApp = {
 
   markNotificationRead: async function(id) {
     try {
-      await fetch(`/api/notifications/${id}/read`, { method: 'POST' });
+      await sharehoodAuth.fetchWithAuth(`/api/notifications/${id}/read`, { method: 'POST' });
       const notif = this.notifications.find(n => n.id === id);
       if (notif) notif.read = true;
       this.renderNotificationsDropdown();
@@ -972,7 +922,7 @@ window.sharehoodApp = {
   markAllNotificationsRead: async function() {
     if (!this.currentUser) return;
     try {
-      await fetch(`/api/notifications/user/${this.currentUser.id}/read-all`, { method: 'POST' });
+      await sharehoodAuth.fetchWithAuth(`/api/notifications/user/${this.currentUser.id}/read-all`, { method: 'POST' });
       this.notifications.forEach(n => n.read = true);
       this.renderNotificationsDropdown();
     } catch (err) {
@@ -1090,6 +1040,4 @@ window.addEventListener('DOMContentLoaded', () => {
   // Restore theme preference
   const savedTheme = localStorage.getItem('sharehood_theme') || 'dark';
   document.documentElement.setAttribute('data-theme', savedTheme);
-
-  window.sharehoodApp.init();
 });

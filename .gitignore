@@ -38,3 +38,4 @@ build/
 # Reference/design files (not needed for deployment)
 reference.avif
 Illustration.avif
+.vercel
